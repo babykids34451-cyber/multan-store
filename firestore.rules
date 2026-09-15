@@ -1,0 +1,113 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'binteayesha466@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidOrder(data) {
+      return data.orderId is string && data.orderId.size() <= 64 &&
+        data.customerName is string && data.customerName.size() <= 150 &&
+        data.customerPhone is string && data.customerPhone.size() <= 30 &&
+        ((data.deliveryAddress is string && data.deliveryAddress.size() <= 300) ||
+         (data.customerAddress is string && data.customerAddress.size() <= 300)) &&
+        ((data.city is string && data.city.size() <= 100) ||
+         (data.customerCity is string && data.customerCity.size() <= 100)) &&
+        data.subtotal is number && data.subtotal >= 0 &&
+        data.total is number && data.total >= 0 &&
+        data.paymentMethod in ['cod', 'raast', 'jazzcash'] &&
+        data.paymentStatus in ['pending', 'processing', 'paid', 'failed', 'cancelled', 'refunded'] &&
+        data.orderStatus in ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() <= 200 &&
+        data.price is number && data.price >= 0 &&
+        data.category is string && data.category.size() <= 100 &&
+        data.stock is number && data.stock >= 0;
+    }
+
+    // Products catalog
+    match /products/{productId} {
+      allow get, list: if isValidId(productId) || true;
+      allow create, update, delete: if isAdmin() && isValidId(productId) && (request.method == 'delete' || isValidProduct(incoming()));
+    }
+
+    // Categories catalog
+    match /categories/{categoryId} {
+      allow get, list: if isValidId(categoryId) || true;
+      allow create, update, delete: if isAdmin() && isValidId(categoryId);
+    }
+
+    // Coupons
+    match /coupons/{couponId} {
+      allow get, list: if isValidId(couponId) || true;
+      allow create, update, delete: if isAdmin() && isValidId(couponId);
+    }
+
+    // Orders Collection
+    match /orders/{orderId} {
+      // Individual order lookup for order confirmation & tracking
+      allow get: if isValidId(orderId);
+
+      // List orders restricted strictly to the user who owns them or admin
+      allow list: if isAdmin() || (isSignedIn() && resource.data.customerId == request.auth.uid);
+
+      // Anyone (guest or authenticated) can create an order with pending state and valid data
+      allow create: if isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().paymentStatus == 'pending' &&
+        incoming().orderStatus == 'pending' &&
+        (!isSignedIn() || incoming().customerId == request.auth.uid || incoming().customerId == null || incoming().customerId == 'guest');
+
+      // Only administrators can update status or payment confirmation
+      allow update: if isValidId(orderId) && isAdmin() && isValidOrder(incoming());
+
+      allow delete: if isValidId(orderId) && isAdmin();
+    }
+
+    // User Profiles
+    match /users/{userId} {
+      allow get, write: if isValidId(userId) && isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+    }
+
+    // Admins Collection
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
+      allow list, write: if isAdmin();
+    }
+
+    // Health / Connection verification
+    match /test/{testId} {
+      allow read: if isValidId(testId);
+    }
+  }
+}

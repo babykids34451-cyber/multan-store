@@ -1,0 +1,132 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "E-Commerce catalog product with variants and stock",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 200 },
+        "slug": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "category": { "type": "string", "maxLength": 100 },
+        "price": { "type": "number" },
+        "salePrice": { "type": "number" },
+        "stock": { "type": "number" },
+        "sku": { "type": "string", "maxLength": 100 },
+        "featured": { "type": "boolean" },
+        "isNew": { "type": "boolean" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "name", "slug", "price", "category", "stock", "isActive"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Catalog product category",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "slug": { "type": "string", "maxLength": 100 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "image": { "type": "string", "maxLength": 1000 },
+        "itemCount": { "type": "number" }
+      },
+      "required": ["id", "name", "slug"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer purchase order with COD or JazzCash payment status",
+      "type": "object",
+      "properties": {
+        "orderId": { "type": "string", "maxLength": 64 },
+        "customerId": { "type": "string", "maxLength": 128 },
+        "customerName": { "type": "string", "maxLength": 150 },
+        "customerEmail": { "type": "string", "maxLength": 150 },
+        "customerPhone": { "type": "string", "maxLength": 30 },
+        "customerAddress": { "type": "string", "maxLength": 300 },
+        "customerCity": { "type": "string", "maxLength": 100 },
+        "customerArea": { "type": "string", "maxLength": 100 },
+        "customerPostalCode": { "type": "string", "maxLength": 20 },
+        "orderNotes": { "type": "string", "maxLength": 1000 },
+        "subtotal": { "type": "number" },
+        "shipping": { "type": "number" },
+        "discount": { "type": "number" },
+        "total": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cod", "jazzcash"] },
+        "paymentStatus": { "type": "string", "enum": ["pending", "processing", "paid", "failed", "cancelled", "refunded"] },
+        "orderStatus": { "type": "string", "enum": ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"] },
+        "transactionId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string", "maxLength": 100 }
+      },
+      "required": [
+        "orderId",
+        "customerName",
+        "customerPhone",
+        "customerAddress",
+        "customerCity",
+        "subtotal",
+        "total",
+        "paymentMethod",
+        "paymentStatus",
+        "orderStatus"
+      ]
+    },
+    "Coupon": {
+      "title": "Coupon",
+      "description": "Promotional discount coupon",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string", "maxLength": 32 },
+        "type": { "type": "string", "enum": ["percentage", "fixed"] },
+        "value": { "type": "number" },
+        "minimumOrder": { "type": "number" },
+        "maximumDiscount": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "expiresAt": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["code", "type", "value", "isActive"]
+    },
+    "CustomerProfile": {
+      "title": "CustomerProfile",
+      "description": "Authenticated customer saved details and address book",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 150 },
+        "email": { "type": "string", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "address": { "type": "string", "maxLength": 300 },
+        "city": { "type": "string", "maxLength": 100 },
+        "postalCode": { "type": "string", "maxLength": 20 },
+        "updatedAt": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "Product" },
+      "description": "Catalog products readable by shoppers and managed by admins"
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "Category" },
+      "description": "Product categories readable by all"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "Order" },
+      "description": "Customer placed orders for COD and JazzCash checkout"
+    },
+    "/coupons/{couponId}": {
+      "schema": { "$ref": "Coupon" },
+      "description": "Discount voucher codes validated at checkout"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "CustomerProfile" },
+      "description": "Customer account details and saved preferences"
+    }
+  }
+}

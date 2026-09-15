@@ -1,0 +1,6 @@
+{
+  "name": "Shaan Online Store",
+  "description": "Professional Pakistani E-Commerce Online Store featuring Cash on Delivery, JazzCash gateway architecture, real order tracking, and Firebase persistence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
