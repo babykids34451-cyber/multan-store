@@ -198,6 +198,7 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ onNavigateToStor
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('all');
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
+  const [showInlineAddProduct, setShowInlineAddProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingSizes, setEditingSizes] = useState('');
   const [editingColors, setEditingColors] = useState('');
@@ -849,12 +850,21 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ onNavigateToStor
   // Filtered Products
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      const pName = (p?.name || (p as any)?.title || '').toLowerCase();
+      const pSku = (p?.sku || '').toLowerCase();
+      const pCategory = (p?.category || (p as any)?.categoryName || '').toLowerCase();
+      const q = productSearch.trim().toLowerCase();
+
       const matchSearch =
-        p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-        p.sku.toLowerCase().includes(productSearch.toLowerCase());
+        !q ||
+        pName.includes(q) ||
+        pSku.includes(q) ||
+        pCategory.includes(q);
+
       const matchCat =
         productCategoryFilter === 'all' ||
-        p.category.toLowerCase() === productCategoryFilter.toLowerCase();
+        pCategory === productCategoryFilter.toLowerCase();
+
       return matchSearch && matchCat;
     });
   }, [products, productSearch, productCategoryFilter]);
@@ -1666,32 +1676,374 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ onNavigateToStor
         {/* ===================================== */}
         {activeTab === 'products' && (
           <div className="space-y-6">
+            {/* Header with Title & Action Buttons */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-black text-white tracking-tight">
-                  Catalog & Inventory Control
+                <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                  <Package className="w-5 h-5 text-rose-500" />
+                  <span>Catalog & Inventory Control ({products.length} Products)</span>
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Manage product pricing, stock quantities, and catalog listings
+                  Manage product names, categories, pricing, 6 images, and stock inventory
                 </p>
               </div>
 
-              <button
-                onClick={() => setIsAddProductModalOpen(true)}
-                className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-rose-600/30 w-fit"
-                id="add-product-btn"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add New Product</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowInlineAddProduct(!showInlineAddProduct)}
+                  className={`px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer border ${
+                    showInlineAddProduct
+                      ? 'bg-rose-950/60 border-rose-500 text-rose-300'
+                      : 'bg-slate-800 hover:bg-slate-700 border-slate-700 text-slate-200'
+                  }`}
+                  id="toggle-inline-add-product-btn"
+                >
+                  <Sparkles className="w-4 h-4 text-rose-400" />
+                  <span>{showInlineAddProduct ? 'Hide Form (فارم بند کریں)' : '⚡ Quick Add Form (فارم کھولیں)'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAddProductModalOpen(true)}
+                  className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black flex items-center gap-2 transition-all cursor-pointer shadow-lg shadow-rose-600/30 w-fit"
+                  id="add-product-btn"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add New Product (نیا پروڈکٹ)</span>
+                </button>
+              </div>
             </div>
+
+            {/* Prominent Helper Info Card: Product Name & Category */}
+            <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-rose-950/30 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/30">
+                  <FolderTree className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-2">
+                    <span>Product Name (پروڈکٹ کا نام) aur Category (کیٹیگری)</span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 text-[10px] font-bold border border-emerald-800">
+                      {categories.length} Categories Active
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Har product ka <strong>Product Name</strong> aur uski <strong>Category</strong> neeche table mein darj hai. Naya product banane ke liye <strong>"Add New Product"</strong> ya <strong>"Quick Add Form"</strong> dabayein.
+                  </p>
+                </div>
+              </div>
+
+              {!showInlineAddProduct && (
+                <button
+                  type="button"
+                  onClick={() => setShowInlineAddProduct(true)}
+                  className="text-xs text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1.5 shrink-0 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800"
+                >
+                  <span>Naya Item Banayein</span>
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* INLINE PRODUCT CREATION FORM (VISIBLE DIRECTLY ON PAGE WHEN TOGGLED) */}
+            {showInlineAddProduct && (
+              <div className="bg-slate-900 border-2 border-rose-600/40 rounded-3xl p-5 sm:p-7 shadow-2xl space-y-6">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-rose-500" />
+                      <span>Naya Product Store Mein Shamil Karein</span>
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Product Name, Category, 6 tasweerain, colours aur sizes darj karein
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowInlineAddProduct(false)}
+                    className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                    title="Close form"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={(e) => {
+                  handleCreateProductSubmit(e);
+                  setShowInlineAddProduct(false);
+                }} className="space-y-5 text-xs">
+                  {/* UNIFIED PRIMARY SECTION: PRODUCT NAME, CATEGORY & 6 IMAGES UPLOAD */}
+                  <div className="p-4 sm:p-5 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-md bg-rose-500/20 text-rose-400 flex items-center justify-center font-black text-[11px]">
+                          1
+                        </span>
+                        <span className="font-bold text-white text-sm">
+                          Product Name (نام) & Category (کیٹیگری)
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">
+                        Pehli tasweer website par main cover photo hogi
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
+                      <div className="sm:col-span-7">
+                        <label className="block text-slate-300 font-bold mb-1.5">
+                          Product Name (پروڈکٹ کا نام) <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={newProduct.name}
+                          onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                          placeholder="e.g. Peshawari Chappal Zalmi Edition"
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-xs"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-5">
+                        <label className="block text-slate-300 font-bold mb-1.5">
+                          Category Select (کیٹیگری منتخب کریں) <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={newProduct.category}
+                          onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                          className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-xs cursor-pointer"
+                        >
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.name}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* 6 Images Uploader */}
+                    <div className="pt-2 border-t border-slate-800/80">
+                      <label className="block text-slate-300 font-bold mb-1.5">
+                        Product Images (6 Tasweerain Upload Karein)
+                      </label>
+                      <ProductImagesUploader
+                        images={newProduct.images || (newProduct.image ? [newProduct.image] : [])}
+                        onChange={(imgs) => setNewProduct({ ...newProduct, images: imgs, image: imgs[0] || '' })}
+                        maxImages={6}
+                        idPrefix="inline-new-product-imgs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ATTRIBUTES SECTION: COLOUR & SIZE */}
+                  <div className="p-4 sm:p-5 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-[11px]">
+                          2
+                        </span>
+                        <span className="font-bold text-white text-sm">
+                          Product Attributes: Colour & Size (Rang aur Naap)
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">
+                        Customers ke liye pasandida rang aur sizes
+                      </span>
+                    </div>
+
+                    {/* Colour Selection */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-slate-300 font-bold flex items-center gap-1.5">
+                          <Palette className="w-3.5 h-3.5 text-rose-400" />
+                          <span>Available Colours (Dastiyab Rang - Comma separated)</span>
+                        </label>
+                        <span className="text-[10px] text-slate-400">Chips par click kar ke add/remove karein</span>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={newProduct.colors}
+                        onChange={(e) => setNewProduct({ ...newProduct, colors: e.target.value })}
+                        placeholder="e.g. Black, Brown, Tan, Navy Blue, Maroon"
+                        className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-xs"
+                      />
+
+                      {/* Popular Colour Chips */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[10px] text-slate-400 mr-1 font-semibold">Quick Add:</span>
+                        {POPULAR_COLORS.map((col) => {
+                          const activeList = newProduct.colors
+                            .split(',')
+                            .map((c) => c.trim().toLowerCase())
+                            .filter(Boolean);
+                          const isSelected = activeList.includes(col.name.toLowerCase());
+                          return (
+                            <button
+                              key={col.name}
+                              type="button"
+                              onClick={() =>
+                                setNewProduct({
+                                  ...newProduct,
+                                  colors: toggleColorInString(newProduct.colors, col.name),
+                                })
+                              }
+                              className={`px-2 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1.5 border transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-rose-600/25 border-rose-500 text-rose-200 shadow-xs'
+                                  : 'bg-slate-900 border-slate-700/80 text-slate-300 hover:border-slate-500'
+                              }`}
+                            >
+                              <span
+                                className="w-2.5 h-2.5 rounded-full border border-slate-600 shrink-0"
+                                style={{ backgroundColor: col.hex }}
+                              />
+                              <span>{col.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Size Selection */}
+                    <div className="space-y-2 pt-3 border-t border-slate-800/80">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-slate-300 font-bold flex items-center gap-1.5">
+                          <Ruler className="w-3.5 h-3.5 text-pink-400" />
+                          <span>Available Sizes (Dastiyab Sizes / Naap - Comma separated)</span>
+                        </label>
+                        <span className="text-[10px] text-slate-400">Presets par click karein ya type karein</span>
+                      </div>
+
+                      <input
+                        type="text"
+                        value={newProduct.sizes}
+                        onChange={(e) => setNewProduct({ ...newProduct, sizes: e.target.value })}
+                        placeholder="e.g. 40, 41, 42, 43, 44 or S, M, L, XL"
+                        className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-xs"
+                      />
+
+                      {/* Size Presets */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[10px] text-slate-400 mr-1 font-semibold">Presets:</span>
+                        {SIZE_PRESETS.map((preset) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() =>
+                              setNewProduct({
+                                ...newProduct,
+                                sizes: preset.value,
+                              })
+                            }
+                            className="px-2 py-0.8 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:border-slate-500 text-[10px] font-medium transition-colors cursor-pointer"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* PRICING & INVENTORY */}
+                  <div className="p-4 sm:p-5 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-4">
+                    <div className="flex items-center gap-2 border-b border-slate-800/80 pb-2.5">
+                      <span className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-[11px]">
+                        3
+                      </span>
+                      <span className="font-bold text-white text-sm">
+                        Pricing & Stock Inventory (Qeemat aur Stock)
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3.5">
+                      <div>
+                        <label className="block text-slate-300 font-bold mb-1.5">
+                          Regular Price (PKR) <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          value={newProduct.price}
+                          onChange={(e) => setNewProduct({ ...newProduct, price: Number(e.target.value) })}
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 font-bold mb-1.5">
+                          Sale Price (PKR Discount)
+                        </label>
+                        <input
+                          type="number"
+                          value={newProduct.salePrice}
+                          onChange={(e) => setNewProduct({ ...newProduct, salePrice: Number(e.target.value) })}
+                          placeholder="Optional discounted price"
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 font-bold mb-1.5">Stock Quantity</label>
+                        <input
+                          type="number"
+                          required
+                          value={newProduct.stock}
+                          onChange={(e) => setNewProduct({ ...newProduct, stock: Number(e.target.value) })}
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-slate-300 font-bold mb-1.5">SKU Code</label>
+                        <input
+                          type="text"
+                          value={newProduct.sku}
+                          onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                          className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-bold mb-1.5">Product Description (Tafseel)</label>
+                      <textarea
+                        rows={2}
+                        value={newProduct.description}
+                        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                        placeholder="Product material, stitching, comfort details..."
+                        className="w-full px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-rose-500 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowInlineAddProduct(false)}
+                      className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs transition-all cursor-pointer shadow-lg shadow-rose-600/30 flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Publish Product to Store (پروڈکٹ شامل کریں)</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             {/* Product Search & Filter Bar */}
             <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center gap-3">
               <div className="relative w-full sm:flex-1">
                 <input
                   type="text"
-                  placeholder="Search products by title or SKU..."
+                  placeholder="Search by Product Name (نام), SKU or Category (کیٹیگری)..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500"
@@ -1702,14 +2054,19 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ onNavigateToStor
               <select
                 value={productCategoryFilter}
                 onChange={(e) => setProductCategoryFilter(e.target.value)}
-                className="w-full sm:w-auto px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none"
+                className="w-full sm:w-auto px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none cursor-pointer"
               >
-                <option value="all">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
+                <option value="all">All Categories ({products.length} Products)</option>
+                {categories.map((c) => {
+                  const count = products.filter(
+                    (p) => (p?.category || (p as any)?.categoryName || '').toLowerCase() === c.name.toLowerCase()
+                  ).length;
+                  return (
+                    <option key={c.id} value={c.name}>
+                      {c.name} ({count})
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -1719,8 +2076,8 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ onNavigateToStor
                 <table className="w-full text-left text-xs text-slate-300">
                   <thead className="bg-slate-950 text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-800">
                     <tr>
-                      <th className="py-3.5 px-4 font-extrabold">Product</th>
-                      <th className="py-3.5 px-4 font-extrabold">Category</th>
+                      <th className="py-3.5 px-4 font-extrabold">Product Name (پروڈکٹ کا نام)</th>
+                      <th className="py-3.5 px-4 font-extrabold">Category (کیٹیگری)</th>
                       <th className="py-3.5 px-4 font-extrabold">Price (PKR)</th>
                       <th className="py-3.5 px-4 font-extrabold">Stock</th>
                       <th className="py-3.5 px-4 font-extrabold">Badges</th>
@@ -1728,108 +2085,160 @@ export const AdminPanelPage: React.FC<AdminPanelPageProps> = ({ onNavigateToStor
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800 font-medium">
-                    {filteredProducts.map((product) => (
-                      <tr key={product.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className="relative shrink-0">
-                              <img
-                                src={product.images[0] || 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200'}
-                                alt={product.name}
-                                className="w-10 h-10 object-cover rounded-lg border border-slate-700"
-                              />
-                              {product.images.length > 1 && (
-                                <span className="absolute -bottom-1 -right-1 px-1 py-0.2 bg-rose-600 text-white text-[9px] font-black rounded-full border border-slate-900 shadow-xs">
-                                  {product.images.length}
-                                </span>
+                    {filteredProducts.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 px-4 text-center">
+                          <div className="max-w-md mx-auto space-y-3">
+                            <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                              <Package className="w-6 h-6" />
+                            </div>
+                            <div className="text-sm font-bold text-white">Koi Product Nazar Nahi Aaya</div>
+                            <p className="text-xs text-slate-400">
+                              Aapka search ya category filter match nahi hua. Filter clear karein ya naya product add karein.
+                            </p>
+                            <div className="flex items-center justify-center gap-2 pt-2">
+                              {(productSearch || productCategoryFilter !== 'all') && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setProductSearch('');
+                                    setProductCategoryFilter('all');
+                                  }}
+                                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-bold cursor-pointer"
+                                >
+                                  Clear Filter
+                                </button>
                               )}
+                              <button
+                                type="button"
+                                onClick={() => setShowInlineAddProduct(true)}
+                                className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs text-white font-bold cursor-pointer"
+                              >
+                                ➕ Add Product Form
+                              </button>
                             </div>
-                            <div>
-                              <div className="font-bold text-white">{product.name}</div>
-                              <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 flex-wrap">
-                                <span>SKU: {product.sku}</span>
-                                {product.images.length > 1 && (
-                                  <span className="text-rose-400 font-semibold">• {product.images.length} photos</span>
-                                )}
-                                {product.colors && product.colors.length > 0 && (
-                                  <span className="text-amber-400 font-semibold">• {product.colors.length} colors</span>
-                                )}
-                                {product.sizes && product.sizes.length > 0 && (
-                                  <span className="text-pink-400 font-semibold">• {product.sizes.length} sizes</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-3.5 px-4 text-slate-300">{product.category}</td>
-
-                        <td className="py-3.5 px-4">
-                          <div className="font-black text-white">
-                            Rs. {product.salePrice ? product.salePrice.toLocaleString() : product.price.toLocaleString()}
-                          </div>
-                          {product.salePrice && (
-                            <div className="text-[10px] text-slate-500 line-through">
-                              Rs. {product.price.toLocaleString()}
-                            </div>
-                          )}
-                        </td>
-
-                        <td className="py-3.5 px-4">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                              product.stock <= 3
-                                ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                                : product.stock <= 10
-                                ? 'bg-amber-950 text-amber-300 border border-amber-800'
-                                : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                            }`}
-                          >
-                            {product.stock} units
-                          </span>
-                        </td>
-
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-1">
-                            {product.featured && (
-                              <span className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 text-[10px] font-bold">
-                                Featured
-                              </span>
-                            )}
-                            {product.isNew && (
-                              <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 text-[10px] font-bold">
-                                New
-                              </span>
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleOpenEditProduct(product)}
-                              className="p-1.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 transition-colors cursor-pointer"
-                              title="Edit product"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                if (window.confirm(`Delete product "${product.name}"?`)) {
-                                  deleteProduct(product.id);
-                                  showToast(`Product deleted`, 'info');
-                                }
-                              }}
-                              className="p-1.5 rounded-lg bg-rose-950/40 text-rose-400 hover:bg-rose-900/60 border border-rose-900/50 transition-colors cursor-pointer"
-                              title="Delete product"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      filteredProducts.map((product) => (
+                        <tr key={product.id} className="hover:bg-slate-800/40 transition-colors">
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="relative shrink-0">
+                                <img
+                                  src={product.images[0] || 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200'}
+                                  alt={product.name}
+                                  className="w-10 h-10 object-cover rounded-lg border border-slate-700"
+                                />
+                                {product.images.length > 1 && (
+                                  <span className="absolute -bottom-1 -right-1 px-1 py-0.2 bg-rose-600 text-white text-[9px] font-black rounded-full border border-slate-900 shadow-xs">
+                                    {product.images.length}
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <div className="font-bold text-white text-sm">
+                                  {product.name || (product as any).title || 'Product Name'}
+                                </div>
+                                {/* Mobile category badge: visible without horizontal scrolling on mobile */}
+                                <div className="sm:hidden mt-1 flex items-center gap-1.5">
+                                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-rose-950/80 text-rose-300 border border-rose-800 font-semibold inline-flex items-center gap-1">
+                                    <FolderTree className="w-3 h-3 text-rose-400" />
+                                    <span>{product.category || (product as any).categoryName || 'General'}</span>
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 flex-wrap mt-0.5">
+                                  <span>SKU: {product.sku || 'N/A'}</span>
+                                  {product.images.length > 1 && (
+                                    <span className="text-rose-400 font-semibold">• {product.images.length} photos</span>
+                                  )}
+                                  {product.colors && product.colors.length > 0 && (
+                                    <span className="text-amber-400 font-semibold">• {product.colors.length} colors</span>
+                                  )}
+                                  {product.sizes && product.sizes.length > 0 && (
+                                    <span className="text-pink-400 font-semibold">• {product.sizes.length} sizes</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Desktop Category column with styled badge */}
+                          <td className="py-3.5 px-4">
+                            <span className="px-2.5 py-1 rounded-lg bg-slate-800 text-rose-300 font-bold text-xs border border-slate-700/80 inline-flex items-center gap-1.5 shadow-xs">
+                              <FolderTree className="w-3.5 h-3.5 text-rose-400" />
+                              <span>{product.category || (product as any).categoryName || 'General'}</span>
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            <div className="font-black text-white">
+                              Rs. {product.salePrice ? product.salePrice.toLocaleString() : product.price.toLocaleString()}
+                            </div>
+                            {product.salePrice && (
+                              <div className="text-[10px] text-slate-500 line-through">
+                                Rs. {product.price.toLocaleString()}
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                                product.stock <= 3
+                                  ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                                  : product.stock <= 10
+                                  ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                                  : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                              }`}
+                            >
+                              {product.stock} units
+                            </span>
+                          </td>
+
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-1">
+                              {product.featured && (
+                                <span className="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 text-[10px] font-bold">
+                                  Featured
+                                </span>
+                              )}
+                              {product.isNew && (
+                                <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 text-[10px] font-bold">
+                                  New
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => handleOpenEditProduct(product)}
+                                className="p-1.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 transition-colors cursor-pointer"
+                                title="Edit product"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Delete product "${product.name}"?`)) {
+                                    deleteProduct(product.id);
+                                    showToast(`Product deleted`, 'info');
+                                  }
+                                }}
+                                className="p-1.5 rounded-lg bg-rose-950/40 text-rose-400 hover:bg-rose-900/60 border border-rose-900/50 transition-colors cursor-pointer"
+                                title="Delete product"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
